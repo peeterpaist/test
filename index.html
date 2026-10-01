@@ -259,6 +259,7 @@
     let started = false;
     let speedLevel = 1;
     let opponentMode = 'human';
+    let player2HumanName = player2Input.value;
 
     function selectedSpeed() {
       return 5 + (speedLevel - 1) * 1;
@@ -289,7 +290,7 @@
       roundLabel.textContent = 'Ready';
       startButton.disabled = false;
       player1Input.disabled = false;
-      player2Input.disabled = false;
+      player2Input.disabled = opponentMode === 'computer';
       status.textContent = 'Enter names, then press Start game.';
     }
 
@@ -431,10 +432,17 @@
     });
     restartButton.addEventListener('click', resetGame);
     player1Input.addEventListener('input', updatePlayerNames);
-    player2Input.addEventListener('input', updatePlayerNames);
+    player2Input.addEventListener('input', () => {
+      if (opponentMode === 'human') player2HumanName = player2Input.value;
+      updatePlayerNames();
+    });
     opponentSelect.addEventListener('change', event => {
+      if (opponentMode === 'human') player2HumanName = player2Input.value.trim() || 'Player 2';
       opponentMode = event.target.value;
+      player2Input.value = opponentMode === 'computer' ? 'Computer' : player2HumanName;
+      player2Input.disabled = opponentMode === 'computer' || started;
       right.y = table.height / 2 - paddle.height / 2;
+      updatePlayerNames();
       status.textContent = opponentMode === 'computer'
         ? 'Computer opponent selected. Press a movement key to serve.'
         : 'Two-player mode selected. Press a movement key to serve.';
