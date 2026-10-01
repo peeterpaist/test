@@ -300,7 +300,9 @@
 
     function updatePlayerNames() {
       leftName.textContent = player1Input.value.trim() || 'Player 1';
-      rightName.textContent = player2Input.value.trim() || 'Player 2';
+      rightName.textContent = opponentMode === 'computer'
+        ? 'Computer'
+        : player2Input.value.trim() || 'Player 2';
     }
 
     function movePaddles() {
