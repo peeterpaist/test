@@ -104,6 +104,34 @@
       height: auto;
       aspect-ratio: 16 / 9;
       background: var(--table);
+      touch-action: none;
+    }
+
+    .touch-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .touch-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .touch-group span {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font: 700 .72rem Arial, sans-serif;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .touch-button {
+      min-height: 48px;
+      padding: 12px 8px;
+      touch-action: none;
     }
 
     .status {
@@ -199,6 +227,19 @@
       <canvas id="court" width="800" height="450" tabindex="0" aria-label="Ping pong game area"></canvas>
     </div>
 
+    <div class="touch-controls" id="touchControls">
+      <div class="touch-group" id="leftTouchControls" aria-label="Player 1 touch controls">
+        <span>Player 1</span>
+        <button class="touch-button" type="button" data-key="KeyQ">Up</button>
+        <button class="touch-button" type="button" data-key="KeyA">Down</button>
+      </div>
+      <div class="touch-group" id="rightTouchControls" aria-label="Player 2 touch controls">
+        <span>Player 2</span>
+        <button class="touch-button" type="button" data-key="ArrowUp">Up</button>
+        <button class="touch-button" type="button" data-key="ArrowDown">Down</button>
+      </div>
+    </div>
+
     <p class="status" id="status">Press an arrow key or Q/A to serve.</p>
     <div class="actions">
       <label class="speed-control" for="player1Input">Player 1
@@ -255,6 +296,7 @@
     const opponentSelect = document.getElementById('opponentSelect');
     const difficultySelect = document.getElementById('difficultySelect');
     const speedSelect = document.getElementById('speedSelect');
+    const rightTouchControls = document.getElementById('rightTouchControls');
 
     const table = { width: canvas.width, height: canvas.height };
     const paddle = { width: 14, height: 92, speed: 7 };
@@ -270,6 +312,7 @@
     let player2HumanName = player2Input.value;
     let difficultyLevel = 'hard';
     let activeDifficulty = 'hard';
+    let draggedPaddle = null;
 
     const computerDifficulties = {
       easy: { movementSpeed: 0.2, missChance: 0.35 },
@@ -323,12 +366,26 @@
         : player2Input.value.trim() || 'Player 2';
     }
 
+    function updateTouchControls() {
+      rightTouchControls.hidden = opponentMode === 'computer';
+    }
+
+    function movePaddle(player, direction) {
+      player.y += direction * paddle.speed;
+    }
+
+    function setPaddlePosition(player, clientY) {
+      const bounds = canvas.getBoundingClientRect();
+      const scale = table.height / bounds.height;
+      player.y = (clientY - bounds.top) * scale - paddle.height / 2;
+    }
+
     function movePaddles() {
-      if (keys.has('KeyQ')) left.y -= paddle.speed;
-      if (keys.has('KeyA')) left.y += paddle.speed;
+      if (keys.has('KeyQ')) movePaddle(left, -1);
+      if (keys.has('KeyA')) movePaddle(left, 1);
       if (opponentMode === 'human') {
-        if (keys.has('ArrowUp')) right.y -= paddle.speed;
-        if (keys.has('ArrowDown')) right.y += paddle.speed;
+        if (keys.has('ArrowUp')) movePaddle(right, -1);
+        if (keys.has('ArrowDown')) movePaddle(right, 1);
       } else {
         moveComputerPaddle();
       }
@@ -440,6 +497,43 @@
       keys.delete(event.code);
     });
 
+    document.querySelectorAll('[data-key]').forEach(button => {
+      const key = button.dataset.key;
+      const release = event => {
+        event.preventDefault();
+        keys.delete(key);
+      };
+      button.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        if (!started || gameOver) return;
+        keys.add(key);
+        if (!running) resetBall(ball.dx < 0 ? -1 : 1);
+      });
+      button.addEventListener('pointerup', release);
+      button.addEventListener('pointercancel', release);
+      button.addEventListener('pointerleave', release);
+    });
+
+    canvas.addEventListener('pointerdown', event => {
+      if (!started || gameOver) return;
+      const bounds = canvas.getBoundingClientRect();
+      const position = (event.clientX - bounds.left) / bounds.width * table.width;
+      draggedPaddle = position < table.width / 2 || opponentMode === 'computer' ? left : right;
+      canvas.setPointerCapture(event.pointerId);
+      setPaddlePosition(draggedPaddle, event.clientY);
+      if (!running) resetBall(ball.dx < 0 ? -1 : 1);
+    });
+    canvas.addEventListener('pointermove', event => {
+      if (draggedPaddle) setPaddlePosition(draggedPaddle, event.clientY);
+    });
+    canvas.addEventListener('pointerup', event => {
+      draggedPaddle = null;
+      canvas.releasePointerCapture(event.pointerId);
+    });
+    canvas.addEventListener('pointercancel', () => {
+      draggedPaddle = null;
+    });
+
     startButton.addEventListener('click', () => {
       updatePlayerNames();
       started = true;
@@ -462,6 +556,7 @@
       player2Input.disabled = opponentMode === 'computer' || started;
       right.y = table.height / 2 - paddle.height / 2;
       updatePlayerNames();
+      updateTouchControls();
       status.textContent = opponentMode === 'computer'
         ? 'Computer opponent selected. Press a movement key to serve.'
         : 'Two-player mode selected. Press a movement key to serve.';
@@ -475,6 +570,7 @@
       status.textContent = `Computer difficulty set to ${event.target.options[event.target.selectedIndex].text}. It applies on the next game.`;
     });
     updatePlayerNames();
+    updateTouchControls();
     resetGame();
     loop();
   </script>
