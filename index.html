@@ -213,6 +213,13 @@
           <option value="computer">Computer</option>
         </select>
       </label>
+      <label class="speed-control" for="difficultySelect">Computer difficulty
+        <select id="difficultySelect" aria-label="Computer difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard" selected>Hard</option>
+        </select>
+      </label>
       <label class="speed-control" for="speedSelect">Speed
         <select id="speedSelect" aria-label="Ball speed">
           <option value="1">1</option>
@@ -246,6 +253,7 @@
     const player1Input = document.getElementById('player1Input');
     const player2Input = document.getElementById('player2Input');
     const opponentSelect = document.getElementById('opponentSelect');
+    const difficultySelect = document.getElementById('difficultySelect');
     const speedSelect = document.getElementById('speedSelect');
 
     const table = { width: canvas.width, height: canvas.height };
@@ -260,6 +268,14 @@
     let speedLevel = 1;
     let opponentMode = 'human';
     let player2HumanName = player2Input.value;
+    let difficultyLevel = 'hard';
+    let activeDifficulty = 'hard';
+
+    const computerDifficulties = {
+      easy: { movementSpeed: 0.35, missChance: 0.18 },
+      medium: { movementSpeed: 0.52, missChance: 0.08 },
+      hard: { movementSpeed: 0.7, missChance: 0 }
+    };
 
     function selectedSpeed() {
       return 5 + (speedLevel - 1) * 1;
@@ -284,6 +300,7 @@
       gameOver = false;
       started = false;
       running = false;
+      activeDifficulty = difficultyLevel;
       ball.dx = 0;
       ball.dy = 0;
       updateScore();
@@ -322,7 +339,9 @@
     function moveComputerPaddle() {
       const target = ball.dx > 0 ? ball.y - paddle.height / 2 : table.height / 2 - paddle.height / 2;
       const difference = target - right.y;
-      right.y += Math.max(-paddle.speed * 0.7, Math.min(paddle.speed * 0.7, difference));
+      const difficulty = computerDifficulties[activeDifficulty];
+      if (Math.random() < difficulty.missChance) return;
+      right.y += Math.max(-paddle.speed * difficulty.movementSpeed, Math.min(paddle.speed * difficulty.movementSpeed, difference));
     }
 
     function hitsPaddle(player) {
@@ -450,6 +469,10 @@
     speedSelect.addEventListener('change', event => {
       speedLevel = Number(event.target.value);
       status.textContent = `Speed ${speedLevel} selected. It applies on the next serve.`;
+    });
+    difficultySelect.addEventListener('change', event => {
+      difficultyLevel = event.target.value;
+      status.textContent = `Computer difficulty set to ${event.target.options[event.target.selectedIndex].text}. It applies on the next game.`;
     });
     updatePlayerNames();
     resetGame();
