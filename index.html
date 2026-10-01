@@ -298,7 +298,7 @@
     const opponentSelect = document.getElementById('opponentSelect');
     const difficultySelect = document.getElementById('difficultySelect');
     const speedSelect = document.getElementById('speedSelect');
-    const rightTouchControls = document.getElementById('rightTouchControls');
+    const touchControls = document.getElementById('touchControls');
 
     const table = { width: canvas.width, height: canvas.height };
     const paddle = { width: 14, height: 92, speed: 7 };
@@ -369,7 +369,7 @@
     }
 
     function updateTouchControls() {
-      rightTouchControls.hidden = opponentMode === 'computer';
+      touchControls.hidden = opponentMode === 'computer';
     }
 
     function movePaddle(player, direction) {
