@@ -312,11 +312,15 @@
     let gameOver = false;
     let started = false;
     let speedLevel = 1;
-    let opponentMode = 'human';
-    let player2HumanName = player2Input.value;
+    const savedOpponentMode = localStorage.getItem('opponentMode');
+    let opponentMode = savedOpponentMode === 'computer' ? 'computer' : 'human';
+    let player2HumanName = localStorage.getItem('player2HumanName') || 'Player 2';
     let difficultyLevel = 'hard';
     let activeDifficulty = 'hard';
     let draggedPaddle = null;
+
+    opponentSelect.value = opponentMode;
+    if (opponentMode === 'computer') player2Input.value = 'Computer';
 
     const computerDifficulties = {
       easy: { movementSpeed: 0.2, missChance: 0.35 },
@@ -550,12 +554,17 @@
     restartButton.addEventListener('click', resetGame);
     player1Input.addEventListener('input', updatePlayerNames);
     player2Input.addEventListener('input', () => {
-      if (opponentMode === 'human') player2HumanName = player2Input.value;
+      if (opponentMode === 'human') {
+        player2HumanName = player2Input.value;
+        localStorage.setItem('player2HumanName', player2HumanName);
+      }
       updatePlayerNames();
     });
     opponentSelect.addEventListener('change', event => {
       if (opponentMode === 'human') player2HumanName = player2Input.value.trim() || 'Player 2';
       opponentMode = event.target.value;
+      localStorage.setItem('opponentMode', opponentMode);
+      localStorage.setItem('player2HumanName', player2HumanName);
       player2Input.value = opponentMode === 'computer' ? 'Computer' : player2HumanName;
       player2Input.disabled = opponentMode === 'computer' || started;
       right.y = table.height / 2 - paddle.height / 2;
